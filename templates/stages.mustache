@@ -1,0 +1,56 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_videopractice/stages
+}}
+<div class="videopractice-stages">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">{{#str}} managestages, videopractice {{/str}}</h2>
+            <div class="text-muted">{{name}}</div>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary" href="{{{addurl}}}">{{#str}} addstage, videopractice {{/str}}</a>
+            <a class="btn btn-outline-secondary" href="{{{backurl}}}">{{#str}}
+                backtoactivity, videopractice {{/str}}</a>
+        </div>
+    </div>
+    <div class="list-group">
+        {{#stages}}
+            <div class="list-group-item">
+                <div class="d-flex flex-wrap justify-content-between gap-3">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2"><strong>{{name}}</strong><span
+                                class="badge bg-light text-dark">{{maxscore}}</span></div>
+                        {{#hasinstructions}}
+                            <div class="mt-2">{{{instructions}}}</div>{{/hasinstructions}}
+                    </div>
+                    <div class="d-flex flex-wrap gap-1 align-self-start">
+                        <a class="btn btn-sm btn-outline-primary" href="{{{editurl}}}">{{#str}}
+                            edit, videopractice {{/str}}</a>
+                        {{#canup}}<a class="btn btn-sm btn-outline-secondary" href="{{{upurl}}}">{{#str}}
+                            moveup, videopractice {{/str}}</a>{{/canup}}
+                        {{#candown}}<a class="btn btn-sm btn-outline-secondary" href="{{{downurl}}}">{{#str}}
+                            movedown, videopractice {{/str}}</a>{{/candown}}
+                        {{#candelete}}<a class="btn btn-sm btn-outline-danger" href="{{{deleteurl}}}">{{#str}}
+                            delete, videopractice {{/str}}</a>{{/candelete}}
+                    </div>
+                </div>
+            </div>
+        {{/stages}}
+    </div>
+</div>

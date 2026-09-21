@@ -1,0 +1,110 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_videopractice/view
+}}
+<div class="videopractice-view">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <h2 class="mb-0">{{name}}</h2>
+        <div class="d-flex gap-2">
+            {{#canmanagestages}}<a class="btn btn-outline-secondary" href="{{{stagesurl}}}">{{#str}}
+                managestages, videopractice {{/str}}</a>{{/canmanagestages}}
+            {{#canviewreport}}<a class="btn btn-outline-secondary" href="{{{reporturl}}}">{{#str}}
+                report, videopractice {{/str}}</a>{{/canviewreport}}
+        </div>
+    </div>
+
+    {{#hasintro}}
+        <div class="videopractice-intro mb-4">{{{intro}}}</div>
+    {{/hasintro}}
+
+    <section class="card mb-4">
+        <div class="card-body">
+            <h3 class="h4">{{#str}} referencevideotitle, videopractice {{/str}}</h3>
+            {{> mod_videopractice/player }}
+            <div class="mt-3" aria-label="{{#str}} referenceprogress, videopractice {{/str}}">
+                <div class="d-flex justify-content-between mb-1">
+                    <strong>{{#str}} referenceprogress, videopractice {{/str}}</strong>
+                    <span>{{#str}} watchedpercent, videopractice, {{percent}} {{/str}}</span>
+                </div>
+                <div class="progress" role="progressbar" aria-valuenow="{{percentrounded}}" aria-valuemin="0"
+                     aria-valuemax="100">
+                    <div class="progress-bar" style="width: {{percentrounded}}%">{{percent}}%</div>
+                </div>
+                <small class="text-muted">{{#str}} requiredpercent, videopractice, {{requiredpercent}} {{/str}}</small>
+            </div>
+        </div>
+    </section>
+
+    {{#hasstages}}
+        <section class="mb-4">
+            <h3 class="h4">{{#str}} practicestages, videopractice {{/str}}</h3>
+            <div class="row g-3">
+                {{#stages}}
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between gap-3">
+                                    <h4 class="h5">{{name}}</h4>
+                                    <span class="badge bg-light text-dark">{{#str}}
+                                        maxscore, videopractice {{/str}}: {{maxscore}}</span>
+                                </div>
+                                {{#hasinstructions}}
+                                    <div class="mb-3">{{{instructions}}}</div>{{/hasinstructions}}
+                                {{#hasgrade}}
+                                    <div class="border-top pt-3">
+                                        <strong>{{#str}}
+                                            grade, videopractice {{/str}}: {{score}} / {{maxscore}}</strong>
+                                        {{#feedback}}
+                                            <div class="mt-2">{{{feedback}}}</div>{{/feedback}}
+                                    </div>
+                                {{/hasgrade}}
+                            </div>
+                        </div>
+                    </div>
+                {{/stages}}
+            </div>
+        </section>
+    {{/hasstages}}
+
+    {{#cansubmit}}
+        <section class="card">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <h3 class="h4 mb-1">{{#str}} yourpractice, videopractice {{/str}}</h3>
+                        {{#hassubmission}}
+                            <span class="badge bg-{{submissionstatusclass}}">{{submissionstatus}}</span>
+                            <span class="ms-2">{{#str}} attempt, videopractice {{/str}} {{attemptnumber}}</span>
+                        {{/hassubmission}}
+                        {{^hassubmission}}<span class="badge bg-secondary">{{#str}}
+                            statusnotstarted, videopractice {{/str}}</span>{{/hassubmission}}
+                    </div>
+                    <a class="btn btn-primary" href="{{{submissionurl}}}">{{#str}}
+                        practicevideosubmission, videopractice {{/str}}</a>
+                </div>
+                {{#isgraded}}
+                    <div class="alert alert-success mt-3 mb-0">
+                        <strong>{{#str}} grade, videopractice {{/str}}: {{submissiongrade}} / {{maxgrade}}</strong>
+                        {{#hasoverallfeedback}}
+                            <div class="mt-2">{{{overallfeedback}}}</div>{{/hasoverallfeedback}}
+                    </div>
+                {{/isgraded}}
+            </div>
+        </section>
+    {{/cansubmit}}
+</div>

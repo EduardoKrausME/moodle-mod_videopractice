@@ -1,0 +1,71 @@
+{{!
+    This file is part of Moodle - https://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template mod_videopractice/submission
+}}
+<div class="videopractice-submission mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+        <div>
+            <h2 class="mb-1">{{#str}} practicevideosubmission, videopractice {{/str}}</h2>
+            {{#attemptnumber}}
+                <div>{{#str}} attempt, videopractice {{/str}} {{attemptnumber}} · {{status}}</div>{{/attemptnumber}}
+        </div>
+        <a class="btn btn-outline-secondary" href="{{{backurl}}}">{{#str}} backtoactivity, videopractice {{/str}}</a>
+    </div>
+
+    {{#hasvideo}}
+        <section class="card mb-4">
+            <div class="card-body">
+                <h3 class="h5">{{#str}} currentvideo, videopractice {{/str}}</h3>
+                <video class="videopractice-submission__video" controls preload="metadata" src="{{{video}}}"></video>
+            </div>
+        </section>
+    {{/hasvideo}}
+
+    {{#allowrecording}}
+        <section class="card mb-4" data-region="recorder"
+                 data-unsupported-text="{{#str}} recordingunsupported, videopractice {{/str}}">
+            <div class="card-body">
+                <h3 class="h5">{{#str}} recordbrowser, videopractice {{/str}}</h3>
+                <p>{{#str}} recordinghelp, videopractice {{/str}}</p>
+                <video class="videopractice-recorder__preview mb-3" data-region="recorder-preview" autoplay muted
+                       playsinline
+                       data-recording-text="{{#str}} recording, videopractice {{/str}}"
+                       data-ready-text="{{#str}} recordingready, videopractice {{/str}}"
+                       data-uploading-text="{{#str}} recordinguploading, videopractice {{/str}}"
+                       data-saved-text="{{#str}} recordingsaved, videopractice {{/str}}"
+                       data-permission-error-text="{{#str}} recordingpermissionerror, videopractice {{/str}}"
+                       data-too-large-text="{{#str}} recordingtoolarge, videopractice {{/str}}"
+                       data-upload-failed-text="{{#str}} recordinguploadfailed, videopractice {{/str}}"></video>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-primary" data-action="start-recording">{{#str}}
+                        startrecording, videopractice {{/str}}</button>
+                    <button type="button" class="btn btn-secondary" data-action="stop-recording" disabled>{{#str}}
+                        stoprecording, videopractice {{/str}}</button>
+                    <button type="button" class="btn btn-success" data-action="upload-recording" disabled>{{#str}}
+                        uploadrecording, videopractice {{/str}}</button>
+                </div>
+                <div class="mt-2" data-region="recorder-status" aria-live="polite"></div>
+            </div>
+        </section>
+    {{/allowrecording}}
+
+    {{#cannewattempt}}
+        <div class="mb-4"><a class="btn btn-primary" href="{{{newattempturl}}}">{{#str}}
+            newattempt, videopractice {{/str}}</a></div>
+    {{/cannewattempt}}
+</div>
