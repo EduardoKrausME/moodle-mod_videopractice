@@ -73,7 +73,7 @@ class progress_manager {
      * @return stdClass Updated progress.
      */
     public function update(stdClass $activity, stdClass $cm, int $userid, float $duration,
-                           float    $position, array $segments): stdClass {
+                           float $position, array $segments): stdClass {
         global $DB;
 
         $existing = $this->get((int)$activity->id, $userid);
