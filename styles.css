@@ -43,3 +43,8 @@
         max-height: 55vh;
     }
 }
+/* Keep only the main reference player unrestricted by viewport height. */
+.videopractice-player .videopractice-player__video {
+    width: 100%;
+    max-height: none;
+}
