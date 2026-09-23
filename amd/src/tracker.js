@@ -7,11 +7,11 @@
 //
 // Moodle is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+// along with Moodle. If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * tracker.js
@@ -21,229 +21,517 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-import Ajax from 'core/ajax';
+define(['core/ajax'], function(Ajax) {
 
-let config = null;
-let segments = [];
-let lastPosition = 0;
-let duration = 0;
-let lastFlush = 0;
-let flushing = false;
-let player = null;
-let sampleTimer = null;
+    let config = null;
+    let segments = [];
+    let lastPosition = 0;
+    let duration = 0;
+    let lastFlush = 0;
+    let flushing = false;
+    let player = null;
+    let sampleTimer = null;
 
-const maxWatchedEnd = () => segments.reduce((max, segment) => Math.max(max, Number(segment[1]) || 0), 0);
+    const maxWatchedEnd = () => segments.reduce(
+        (max, segment) => Math.max(
+            max,
+            Number(segment[1]) || 0
+        ),
+        0
+    );
 
-const addSegment = (from, to) => {
-    from = Number(from);
-    to = Number(to);
-    if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to - from > 4.5) {
-        return;
-    }
-    segments.push([Math.max(0, from), Math.max(0, to)]);
-    if (segments.length > 250) {
-        segments = segments.slice(-250);
-    }
-};
+    const addSegment = (from, to) => {
+        from = Number(from);
+        to = Number(to);
 
-const flush = async (force = false) => {
-    const now = Date.now();
-    if (flushing || (!force && now - lastFlush < 7500) || !config || duration <= 0) {
-        return;
-    }
-    flushing = true;
-    lastFlush = now;
-    try {
-        await Ajax.call([{
-            methodname: 'mod_videopractice_update_progress',
-            args: {
-                cmid: config.cmid,
-                duration: duration,
-                position: lastPosition,
-                segments: JSON.stringify(segments),
-            },
-        }])[0];
-    } catch (error) {
-        // Progress is best-effort during playback; the next flush retries with the same intervals.
-    } finally {
-        flushing = false;
-    }
-};
-
-const sample = (position, videoDuration, seekSetter = null) => {
-    const current = Number(position) || 0;
-    duration = Math.max(duration, Number(videoDuration) || 0);
-    const delta = current - lastPosition;
-    if (!config.allowseek && delta > 4.5) {
-        const allowed = Math.max(maxWatchedEnd(), lastPosition);
-        if (current > allowed + 2 && seekSetter) {
-            seekSetter(allowed);
+        if (
+            !Number.isFinite(from) ||
+            !Number.isFinite(to) ||
+            to <= from ||
+            to - from > 4.5
+        ) {
             return;
         }
-    }
-    if (delta > 0 && delta <= 4.5) {
-        addSegment(lastPosition, current);
-    }
-    lastPosition = current;
-    flush(false);
-};
 
-const resumePosition = () => config.resumeplayback ? Math.max(0, Number(config.lastposition) || 0) : 0;
+        segments.push([
+            Math.max(0, from),
+            Math.max(0, to)
+        ]);
 
-const initHtml5 = () => {
-    const video = document.querySelector('[data-region="html5-player"]');
-    if (!video) {
-        return;
-    }
-    player = video;
-    video.addEventListener('loadedmetadata', () => {
-        duration = Number(video.duration) || 0;
-        const resume = Math.min(resumePosition(), duration || resumePosition());
-        if (resume > 0) {
-            video.currentTime = resume;
-            lastPosition = resume;
+        if (segments.length > 250) {
+            segments = segments.slice(-250);
         }
-    });
-    video.addEventListener('play', () => {
-        lastPosition = Number(video.currentTime) || lastPosition;
-    });
-    video.addEventListener('timeupdate', () => {
-        if (!video.paused && !video.seeking) {
-            sample(video.currentTime, video.duration, value => {
-                video.currentTime = value;
-            });
+    };
+
+    const flush = async(force = false) => {
+        const now = Date.now();
+
+        if (
+            flushing ||
+            (!force && now - lastFlush < 7500) ||
+            !config ||
+            duration <= 0
+        ) {
+            return;
         }
-    });
-    video.addEventListener('seeking', () => {
-        if (!config.allowseek) {
-            const allowed = Math.max(maxWatchedEnd(), lastPosition);
-            if (video.currentTime > allowed + 2) {
-                video.currentTime = allowed;
+
+        flushing = true;
+        lastFlush = now;
+
+        try {
+            await Ajax.call([{
+                methodname: 'mod_videopractice_update_progress',
+
+                args: {
+                    cmid: config.cmid,
+                    duration: duration,
+                    position: lastPosition,
+                    segments: JSON.stringify(segments)
+                }
+            }])[0];
+
+        } catch (error) {
+            // Progress is best-effort during playback;
+            // the next flush retries with the same intervals.
+
+        } finally {
+            flushing = false;
+        }
+    };
+
+    const sample = (
+        position,
+        videoDuration,
+        seekSetter = null
+    ) => {
+        const current = Number(position) || 0;
+
+        duration = Math.max(
+            duration,
+            Number(videoDuration) || 0
+        );
+
+        const delta = current - lastPosition;
+
+        if (!config.allowseek && delta > 4.5) {
+            const allowed = Math.max(
+                maxWatchedEnd(),
+                lastPosition
+            );
+
+            if (
+                current > allowed + 2 &&
+                seekSetter
+            ) {
+                seekSetter(allowed);
+                return;
             }
         }
-    });
-    ['pause', 'ended'].forEach(event => video.addEventListener(event, () => flush(true)));
-};
 
-const loadScript = (url, test) => new Promise((resolve, reject) => {
-    if (test()) {
-        resolve();
-        return;
-    }
-    const existing = document.querySelector(`script[src="${url}"]`);
-    if (existing) {
-        const timer = window.setInterval(() => {
-            if (test()) {
-                window.clearInterval(timer);
-                resolve();
-            }
-        }, 100);
-        window.setTimeout(() => {
-            window.clearInterval(timer);
-            if (!test()) {
-                reject(new Error('player-api-timeout'));
-            }
-        }, 10000);
-        return;
-    }
-    const script = document.createElement('script');
-    script.src = url;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = reject;
-    document.head.append(script);
-});
+        if (
+            delta > 0 &&
+            delta <= 4.5
+        ) {
+            addSegment(
+                lastPosition,
+                current
+            );
+        }
 
-const initYouTube = async () => {
-    const iframe = document.querySelector('[data-region="youtube-player"]');
-    if (!iframe) {
-        return;
-    }
-    try {
-        await loadScript('https://www.youtube.com/iframe_api', () => Boolean(window.YT && window.YT.Player));
-    } catch (error) {
-        return;
-    }
-    player = new window.YT.Player(iframe, {
-        events: {
-            onReady: event => {
-                duration = Number(event.target.getDuration()) || 0;
-                const resume = resumePosition();
+        lastPosition = current;
+
+        flush(false);
+    };
+
+    const resumePosition = () =>
+        config.resumeplayback
+            ? Math.max(
+                0,
+                Number(config.lastposition) || 0
+            )
+            : 0;
+
+    const initHtml5 = () => {
+        const video = document.querySelector(
+            '[data-region="html5-player"]'
+        );
+
+        if (!video) {
+            return;
+        }
+
+        player = video;
+
+        video.addEventListener(
+            'loadedmetadata',
+            () => {
+                duration =
+                    Number(video.duration) || 0;
+
+                const resume = Math.min(
+                    resumePosition(),
+                    duration || resumePosition()
+                );
+
                 if (resume > 0) {
-                    event.target.seekTo(resume, true);
+                    video.currentTime = resume;
                     lastPosition = resume;
                 }
-            },
-            onStateChange: event => {
-                if (event.data === window.YT.PlayerState.PLAYING) {
-                    lastPosition = Number(event.target.getCurrentTime()) || lastPosition;
-                } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
-                    flush(true);
+            }
+        );
+
+        video.addEventListener(
+            'play',
+            () => {
+                lastPosition =
+                    Number(video.currentTime) ||
+                    lastPosition;
+            }
+        );
+
+        video.addEventListener(
+            'timeupdate',
+            () => {
+                if (
+                    !video.paused &&
+                    !video.seeking
+                ) {
+                    sample(
+                        video.currentTime,
+                        video.duration,
+                        value => {
+                            video.currentTime = value;
+                        }
+                    );
                 }
-            },
-        },
-    });
-    sampleTimer = window.setInterval(() => {
-        if (!player || typeof player.getPlayerState !== 'function' || player.getPlayerState() !== window.YT.PlayerState.PLAYING) {
+            }
+        );
+
+        video.addEventListener(
+            'seeking',
+            () => {
+                if (!config.allowseek) {
+                    const allowed = Math.max(
+                        maxWatchedEnd(),
+                        lastPosition
+                    );
+
+                    if (
+                        video.currentTime >
+                        allowed + 2
+                    ) {
+                        video.currentTime = allowed;
+                    }
+                }
+            }
+        );
+
+        ['pause', 'ended'].forEach(
+            event => video.addEventListener(
+                event,
+                () => flush(true)
+            )
+        );
+    };
+
+    const loadScript = (url, test) =>
+        new Promise((resolve, reject) => {
+            if (test()) {
+                resolve();
+                return;
+            }
+
+            const existing =
+                document.querySelector(
+                    `script[src="${url}"]`
+                );
+
+            if (existing) {
+                const timer =
+                    window.setInterval(
+                        () => {
+                            if (test()) {
+                                window.clearInterval(
+                                    timer
+                                );
+
+                                resolve();
+                            }
+                        },
+                        100
+                    );
+
+                window.setTimeout(
+                    () => {
+                        window.clearInterval(
+                            timer
+                        );
+
+                        if (!test()) {
+                            reject(
+                                new Error(
+                                    'player-api-timeout'
+                                )
+                            );
+                        }
+                    },
+                    10000
+                );
+
+                return;
+            }
+
+            const script =
+                document.createElement(
+                    'script'
+                );
+
+            script.src = url;
+            script.async = true;
+
+            script.onload = () =>
+                resolve();
+
+            script.onerror = reject;
+
+            document.head.appendChild(
+                script
+            );
+        });
+
+    const initYouTube = async() => {
+        const iframe =
+            document.querySelector(
+                '[data-region="youtube-player"]'
+            );
+
+        if (!iframe) {
             return;
         }
-        sample(player.getCurrentTime(), player.getDuration(), value => player.seekTo(value, true));
-    }, 1000);
-};
 
-const initVimeo = async () => {
-    const iframe = document.querySelector('[data-region="vimeo-player"]');
-    if (!iframe) {
-        return;
-    }
-    try {
-        await loadScript('https://player.vimeo.com/api/player.js', () => Boolean(window.Vimeo && window.Vimeo.Player));
-    } catch (error) {
-        return;
-    }
-    player = new window.Vimeo.Player(iframe);
-    try {
-        duration = Number(await player.getDuration()) || 0;
-        const resume = resumePosition();
-        if (resume > 0) {
-            await player.setCurrentTime(resume);
-            lastPosition = resume;
-        }
-    } catch (error) {
-        // The iframe remains usable even if the API refuses an initial seek.
-    }
-    player.on('play', async () => {
         try {
-            lastPosition = Number(await player.getCurrentTime()) || lastPosition;
-        } catch (error) {
-            // Ignore API read errors during playback.
-        }
-    });
-    player.on('timeupdate', data => {
-        sample(data.seconds, data.duration, value => player.setCurrentTime(value));
-    });
-    player.on('seeked', data => {
-        if (!config.allowseek) {
-            const allowed = Math.max(maxWatchedEnd(), lastPosition);
-            if (data.seconds > allowed + 2) {
-                player.setCurrentTime(allowed);
-            }
-        }
-    });
-    player.on('pause', () => flush(true));
-    player.on('ended', () => flush(true));
-};
+            await loadScript(
+                'https://www.youtube.com/iframe_api',
+                () => Boolean(
+                    window.YT &&
+                    window.YT.Player
+                )
+            );
 
-export const init = async (initialConfig) => {
-    config = initialConfig || {};
-    segments = Array.isArray(config.segments) ? config.segments : [];
-    lastPosition = Math.max(0, Number(config.lastposition) || 0);
-    if (config.source === 'youtube') {
-        await initYouTube();
-    } else if (config.source === 'vimeo') {
-        await initVimeo();
-    } else {
-        initHtml5();
-    }
-    window.addEventListener('pagehide', () => flush(true));
-};
+        } catch (error) {
+            return;
+        }
+
+        player = new window.YT.Player(
+            iframe,
+            {
+                events: {
+                    onReady: event => {
+                        duration = Number(
+                            event.target.getDuration()
+                        ) || 0;
+
+                        const resume =
+                            resumePosition();
+
+                        if (resume > 0) {
+                            event.target.seekTo(
+                                resume,
+                                true
+                            );
+
+                            lastPosition = resume;
+                        }
+                    },
+
+                    onStateChange: event => {
+                        if (
+                            event.data ===
+                            window.YT.PlayerState.PLAYING
+                        ) {
+                            lastPosition = Number(
+                                event.target.getCurrentTime()
+                            ) || lastPosition;
+
+                        } else if (
+                            event.data ===
+                            window.YT.PlayerState.PAUSED ||
+                            event.data ===
+                            window.YT.PlayerState.ENDED
+                        ) {
+                            flush(true);
+                        }
+                    }
+                }
+            }
+        );
+
+        sampleTimer = window.setInterval(
+            () => {
+                if (
+                    !player ||
+                    typeof player.getPlayerState !==
+                    'function' ||
+                    player.getPlayerState() !==
+                    window.YT.PlayerState.PLAYING
+                ) {
+                    return;
+                }
+
+                sample(
+                    player.getCurrentTime(),
+                    player.getDuration(),
+                    value => player.seekTo(
+                        value,
+                        true
+                    )
+                );
+            },
+            1000
+        );
+    };
+
+    const initVimeo = async() => {
+        const iframe =
+            document.querySelector(
+                '[data-region="vimeo-player"]'
+            );
+
+        if (!iframe) {
+            return;
+        }
+
+        try {
+            await loadScript(
+                'https://player.vimeo.com/api/player.js',
+                () => Boolean(
+                    window.Vimeo &&
+                    window.Vimeo.Player
+                )
+            );
+
+        } catch (error) {
+            return;
+        }
+
+        player =
+            new window.Vimeo.Player(
+                iframe
+            );
+
+        try {
+            duration = Number(
+                await player.getDuration()
+            ) || 0;
+
+            const resume =
+                resumePosition();
+
+            if (resume > 0) {
+                await player.setCurrentTime(
+                    resume
+                );
+
+                lastPosition = resume;
+            }
+
+        } catch (error) {
+            // The iframe remains usable even if the API
+            // refuses an initial seek.
+        }
+
+        player.on(
+            'play',
+            async() => {
+                try {
+                    lastPosition = Number(
+                        await player.getCurrentTime()
+                    ) || lastPosition;
+
+                } catch (error) {
+                    // Ignore API read errors during playback.
+                }
+            }
+        );
+
+        player.on(
+            'timeupdate',
+            data => {
+                sample(
+                    data.seconds,
+                    data.duration,
+                    value =>
+                        player.setCurrentTime(
+                            value
+                        )
+                );
+            }
+        );
+
+        player.on(
+            'seeked',
+            data => {
+                if (!config.allowseek) {
+                    const allowed = Math.max(
+                        maxWatchedEnd(),
+                        lastPosition
+                    );
+
+                    if (
+                        data.seconds >
+                        allowed + 2
+                    ) {
+                        player.setCurrentTime(
+                            allowed
+                        );
+                    }
+                }
+            }
+        );
+
+        player.on(
+            'pause',
+            () => flush(true)
+        );
+
+        player.on(
+            'ended',
+            () => flush(true)
+        );
+    };
+
+    const init = async(initialConfig) => {
+        config = initialConfig || {};
+
+        segments =
+            Array.isArray(config.segments)
+                ? config.segments
+                : [];
+
+        lastPosition = Math.max(
+            0,
+            Number(config.lastposition) || 0
+        );
+
+        if (config.source === 'youtube') {
+            await initYouTube();
+
+        } else if (
+            config.source === 'vimeo'
+        ) {
+            await initVimeo();
+
+        } else {
+            initHtml5();
+        }
+
+        window.addEventListener(
+            'pagehide',
+            () => flush(true)
+        );
+    };
+
+    return {
+        init: init
+    };
+});

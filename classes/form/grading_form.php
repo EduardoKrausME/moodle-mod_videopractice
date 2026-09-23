@@ -59,7 +59,7 @@ class grading_form extends \moodleform {
                 get_string('stagefeedback', 'videopractice'), ['rows' => 3, 'cols' => 70]);
             $mform->setType('feedback_' . $stage->id, PARAM_RAW);
         }
-        $mform->addElement('header', 'overall', get_string('overallfeedback', 'videopractice'));
+        $mform->addElement('html', '<h3>' . get_string('overallfeedback', 'videopractice') . '</h3>');
         $mform->addElement('textarea', 'feedback', get_string('overallfeedback', 'videopractice'),
             ['rows' => 5, 'cols' => 70]);
         $mform->setType('feedback', PARAM_RAW);

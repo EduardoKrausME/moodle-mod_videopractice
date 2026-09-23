@@ -44,7 +44,6 @@ class submission_form extends \moodleform {
         $mform->setType('id', PARAM_INT);
         $mform->addElement('filemanager', 'practicevideo', get_string('practicevideo', 'videopractice'), null, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'maxbytes' => (int)$activity->submissionmaxbytes,
             'accepted_types' => ['video'],
         ]);
@@ -57,4 +56,23 @@ class submission_form extends \moodleform {
         $mform->addGroup($buttons, 'buttonar', '', [' '], false);
         $mform->closeHeaderBefore('buttonar');
     }
+    /**
+     * Validates the uploaded practice video.
+     *
+     * @param array $data Submitted form data.
+     * @param array $files Submitted files.
+     * @return array Validation errors.
+     */
+    public function validation($data, $files): array {
+        $errors = parent::validation($data, $files);
+        $draftid = (int)($data['practicevideo'] ?? 0);
+        if ($draftid > 0) {
+            $draftinfo = file_get_draft_area_info($draftid);
+            if ((int)$draftinfo['filecount'] > 1) {
+                $errors['practicevideo'] = get_string('errormaxfiles', 'videopractice');
+            }
+        }
+        return $errors;
+    }
+
 }

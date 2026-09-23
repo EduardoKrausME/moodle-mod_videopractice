@@ -120,7 +120,7 @@ if ($download === 'csv') {
         get_string('referencethreshold', 'videopractice'),
         get_string('submissionstatus', 'videopractice'),
         get_string('assessmentstatus', 'videopractice'),
-        get_string('grade'),
+        get_string('grade', 'grades'),
         get_string('lastupdate', 'videopractice'),
     ]);
     foreach ($csvrows as $csvrow) {

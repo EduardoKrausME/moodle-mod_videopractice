@@ -47,14 +47,13 @@ class mod_videopractice_mod_form extends moodleform_mod {
         $mform->addRule('name', null, 'required', null, 'client');
         $this->standard_intro_elements();
 
-        $mform->addElement('header', 'referenceheader', get_string('referenceheader', 'videopractice'));
+        $mform->addElement('html', '<h3>' . get_string('referenceheader', 'videopractice') . '</h3>');
         $mform->addElement('select', 'referencesource', get_string('referencesource', 'videopractice'),
             player::source_options());
         $mform->setDefault('referencesource', 'upload');
         $mform->setType('referencesource', PARAM_ALPHA);
         $mform->addElement('filemanager', 'referencevideo', get_string('referencevideo', 'videopractice'), null, [
             'subdirs' => 0,
-            'maxfiles' => 1,
             'accepted_types' => ['video'],
         ]);
         $mform->hideIf('referencevideo', 'referencesource', 'neq', 'upload');
@@ -69,7 +68,7 @@ class mod_videopractice_mod_form extends moodleform_mod {
         $mform->addElement('selectyesno', 'allowseek', get_string('allowseek', 'videopractice'));
         $mform->setDefault('allowseek', 1);
 
-        $mform->addElement('header', 'submissionheader', get_string('submissionheader', 'videopractice'));
+        $mform->addElement('html', '<h3>' . get_string('submissionheader', 'videopractice') . '</h3>');
         $attemptoptions = [0 => get_string('unlimited', 'videopractice')];
         for ($i = 1; $i <= 10; $i++) {
             $attemptoptions[$i] = (string)$i;
@@ -107,6 +106,15 @@ class mod_videopractice_mod_form extends moodleform_mod {
             $value = (int)$data[$field];
             if ($value < 1 || $value > 100) {
                 $errors[$field] = get_string('errorcompletionpercent', 'videopractice');
+            }
+        }
+        foreach (['referencevideo'] as $field) {
+            $draftid = (int)($data[$field] ?? 0);
+            if ($draftid > 0) {
+                $draftinfo = file_get_draft_area_info($draftid);
+                if ((int)$draftinfo['filecount'] > 1) {
+                    $errors[$field] = get_string('errormaxfiles', 'videopractice');
+                }
             }
         }
         return $errors;
