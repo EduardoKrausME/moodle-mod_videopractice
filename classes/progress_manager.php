@@ -122,7 +122,7 @@ class progress_manager {
 
         $course = $DB->get_record('course', ['id' => $activity->course], '*', MUST_EXIST);
         $completion = new completion_info($course);
-        if ($completion->is_enabled($cm)) {
+        if ($completion->is_enabled($cm) && (int)$cm->completion === COMPLETION_TRACKING_AUTOMATIC) {
             $completion->update_state($cm, COMPLETION_UNKNOWN, $userid);
         }
         return $record;
