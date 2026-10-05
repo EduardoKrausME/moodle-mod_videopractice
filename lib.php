@@ -270,7 +270,7 @@ function videopractice_grade_item_delete(stdClass $activity): int {
  * @param stdClass $cm Course module record.
  * @return cached_cm_info|null
  */
-function videopractice_get_coursemodule_info(stdClass $cm): ?cached_cm_info {
+function videopractice_get_coursemodule_info(stdClass $cm) {
     global $DB;
     $activity = $DB->get_record(
         'videopractice',
@@ -278,7 +278,7 @@ function videopractice_get_coursemodule_info(stdClass $cm): ?cached_cm_info {
         'id,name,intro,introformat,completionpercent,completionrequirepractice'
     );
     if (!$activity) {
-        return null;
+        return false;
     }
     $info = new cached_cm_info();
     $info->name = $activity->name;
@@ -286,10 +286,9 @@ function videopractice_get_coursemodule_info(stdClass $cm): ?cached_cm_info {
         $info->content = format_module_intro('videopractice', $activity, $cm->id, false);
     }
     if ((int)$cm->completion === COMPLETION_TRACKING_AUTOMATIC) {
-        $info->customdata['customcompletionrules'] = [
-            'completionpercent' => (int)$activity->completionpercent,
-            'completionrequirepractice' => (bool)$activity->completionrequirepractice,
-        ];
+        $info->customdata['customcompletionrules']['completionpercent'] = (int)$activity->completionpercent;
+        $info->customdata['customcompletionrules']['completionrequirepractice'] =
+            (int)$activity->completionrequirepractice;
     }
     return $info;
 }
@@ -313,35 +312,6 @@ function mod_videopractice_get_completion_active_rule_descriptions(cached_cm_inf
         $descriptions[] = get_string('completionrequirepracticedesc', 'videopractice');
     }
     return $descriptions;
-}
-
-/**
- * Evaluates the legacy completion callback from server-authoritative data.
- *
- * @param stdClass $course Course record.
- * @param stdClass $cm Course module record.
- * @param int $userid User id.
- * @param bool $type Completion aggregation type.
- * @return bool
- */
-function videopractice_get_completion_state($course, $cm, int $userid, bool $type): bool {
-    global $DB;
-    $activity = $DB->get_record('videopractice', ['id' => $cm->instance], '*', MUST_EXIST);
-    $progress = $DB->get_record('videopractice_progress', [
-        'videopracticeid' => $activity->id,
-        'userid' => $userid,
-    ]);
-    if (!$progress || (float)$progress->percent < (float)$activity->completionpercent) {
-        return false;
-    }
-    if (empty($activity->completionrequirepractice)) {
-        return true;
-    }
-    $submission = (new submission_manager())->get_latest((int)$activity->id, $userid);
-    return $submission && in_array($submission->status, [
-            submission_manager::STATUS_SUBMITTED,
-            submission_manager::STATUS_GRADED,
-        ], true);
 }
 
 /**
