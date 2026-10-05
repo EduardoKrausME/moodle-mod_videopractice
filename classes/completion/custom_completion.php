@@ -34,81 +34,47 @@ class custom_completion extends activity_custom_completion {
     /**
      * Returns state of one custom rule.
      *
-     * Availability is resolved by get_available_custom_rules() before Moodle calls
-     * this method. Re-validating availability here can produce a false negative when
-     * cm_info changes or is rebuilt between the two calls, so only the rule definition
-     * itself is validated here.
-     *
      * @param string $rule Rule name.
      * @return int
      */
     public function get_state(string $rule): int {
         global $DB;
 
-        if (!$this->is_defined($rule)) {
-            throw new \coding_exception("Undefined custom completion rule '{$rule}'");
-        }
+        $this->validate_rule($rule);
 
         $activity = $DB->get_record('videopractice', ['id' => $this->cm->instance], '*', MUST_EXIST);
-        if ($rule === 'completionpercent') {
-            $progress = $DB->get_record('videopractice_progress', [
-                'videopracticeid' => $activity->id,
-                'userid' => $this->userid,
-            ]);
-            return $progress && (float)$progress->percent >= (float)$activity->completionpercent
-                ? COMPLETION_COMPLETE
-                : COMPLETION_INCOMPLETE;
+
+        switch ($rule) {
+            case 'completionpercent':
+                $progress = $DB->get_record('videopractice_progress', [
+                    'videopracticeid' => $activity->id,
+                    'userid' => $this->userid,
+                ]);
+                return $progress && (float)$progress->percent >= (float)$activity->completionpercent
+                    ? COMPLETION_COMPLETE
+                    : COMPLETION_INCOMPLETE;
+
+            case 'completionrequirepractice':
+                $submission = (new submission_manager())->get_latest((int)$activity->id, (int)$this->userid);
+                return $submission && in_array($submission->status, [
+                    submission_manager::STATUS_SUBMITTED,
+                    submission_manager::STATUS_GRADED,
+                ], true) ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
         }
-        if ($rule === 'completionrequirepractice') {
-            $submission = (new submission_manager())->get_latest((int)$activity->id, (int)$this->userid);
-            return $submission && in_array($submission->status, [
-                submission_manager::STATUS_SUBMITTED,
-                submission_manager::STATUS_GRADED,
-            ], true) ? COMPLETION_COMPLETE : COMPLETION_INCOMPLETE;
-        }
+
         return COMPLETION_INCOMPLETE;
     }
 
     /**
      * Returns custom rule names.
      *
-     * @return array
-     */
-    public static function get_defined_custom_rules(): array {
-        return ['completionpercent', 'completionrequirepractice'];
-    }
-
-    /**
-     * Returns the custom completion rules enabled for this activity instance.
-     *
-     * The persisted activity settings are the source of truth. cm_info custom data may be
-     * temporarily empty or incomplete while caches are rebuilt.
-     *
      * @return string[]
      */
-    public function get_available_custom_rules(): array {
-        if ((int)$this->cm->completion !== COMPLETION_TRACKING_AUTOMATIC) {
-            return [];
-        }
-
-        global $DB;
-
-        $activity = $DB->get_record(
-            'videopractice',
-            ['id' => $this->cm->instance],
-            'id,completionpercent,completionrequirepractice',
-            MUST_EXIST
-        );
-
-        $rules = [];
-        if ((int)$activity->completionpercent > 0) {
-            $rules[] = 'completionpercent';
-        }
-        if (!empty($activity->completionrequirepractice)) {
-            $rules[] = 'completionrequirepractice';
-        }
-
-        return $rules;
+    public static function get_defined_custom_rules(): array {
+        return [
+            'completionpercent',
+            'completionrequirepractice',
+        ];
     }
 
     /**
@@ -118,14 +84,22 @@ class custom_completion extends activity_custom_completion {
      */
     public function get_custom_rule_descriptions(): array {
         global $DB;
-        $activity = $DB->get_record('videopractice', ['id' => $this->cm->instance], '*', MUST_EXIST);
-        $descriptions = [
-            'completionpercent' => get_string('completionpercentdesc', 'videopractice', (int)$activity->completionpercent),
+
+        $activity = $DB->get_record(
+            'videopractice',
+            ['id' => $this->cm->instance],
+            'id,completionpercent',
+            MUST_EXIST
+        );
+
+        return [
+            'completionpercent' => get_string(
+                'completionpercentdesc',
+                'videopractice',
+                (int)$activity->completionpercent
+            ),
+            'completionrequirepractice' => get_string('completionrequirepracticedesc', 'videopractice'),
         ];
-        if (!empty($activity->completionrequirepractice)) {
-            $descriptions['completionrequirepractice'] = get_string('completionrequirepracticedesc', 'videopractice');
-        }
-        return $descriptions;
     }
 
     /**
