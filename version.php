@@ -24,7 +24,7 @@
 
 defined('MOODLE_INTERNAL') || die;
 
-$plugin->version = 2026100505;
+$plugin->version = 2026100506;
 $plugin->release = '1.0.9';
 $plugin->component = 'mod_videopractice';
 $plugin->requires = 2024042200;
