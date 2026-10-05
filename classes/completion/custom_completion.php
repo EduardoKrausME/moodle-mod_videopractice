@@ -34,12 +34,21 @@ class custom_completion extends activity_custom_completion {
     /**
      * Returns state of one custom rule.
      *
+     * Availability is resolved by get_available_custom_rules() before Moodle calls
+     * this method. Re-validating availability here can produce a false negative when
+     * cm_info changes or is rebuilt between the two calls, so only the rule definition
+     * itself is validated here.
+     *
      * @param string $rule Rule name.
      * @return int
      */
     public function get_state(string $rule): int {
         global $DB;
-        $this->validate_rule($rule);
+
+        if (!$this->is_defined($rule)) {
+            throw new \coding_exception("Undefined custom completion rule '{$rule}'");
+        }
+
         $activity = $DB->get_record('videopractice', ['id' => $this->cm->instance], '*', MUST_EXIST);
         if ($rule === 'completionpercent') {
             $progress = $DB->get_record('videopractice_progress', [
@@ -73,8 +82,7 @@ class custom_completion extends activity_custom_completion {
      * Returns the custom completion rules enabled for this activity instance.
      *
      * The persisted activity settings are the source of truth. cm_info custom data may be
-     * temporarily empty or incomplete while caches are rebuilt, which would otherwise make
-     * validate_rule() reject an enabled rule at runtime.
+     * temporarily empty or incomplete while caches are rebuilt.
      *
      * @return string[]
      */
