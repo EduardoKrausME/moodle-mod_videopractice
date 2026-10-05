@@ -34,13 +34,19 @@ class custom_completion extends activity_custom_completion {
     /**
      * Returns state of one custom rule.
      *
+     * Moodle's completion API resolves the enabled rules before calling this method.
+     * Rechecking availability here can fail when cm_info is refreshed between those
+     * two operations, so only the plugin-defined rule name is validated locally.
+     *
      * @param string $rule Rule name.
      * @return int
      */
     public function get_state(string $rule): int {
         global $DB;
 
-        $this->validate_rule($rule);
+        if (!$this->is_defined($rule)) {
+            throw new \coding_exception("Undefined custom completion rule '{$rule}'");
+        }
 
         $activity = $DB->get_record('videopractice', ['id' => $this->cm->instance], '*', MUST_EXIST);
 
