@@ -63,12 +63,14 @@ class restore_videopractice_activity_task extends restore_activity_task {
     }
 
     /**
-     * No plugin-specific decode contents are required.
+     * Defines activity content fields processed by the link decoder.
      *
-     * @return array
+     * @return restore_decode_content[]
      */
     public static function define_decode_contents(): array {
-        return [];
+        return [
+            new restore_decode_content('videopractice', ['intro'], 'videopractice'),
+        ];
     }
 
     /**
