@@ -272,7 +272,11 @@ function videopractice_grade_item_delete(stdClass $activity): int {
  */
 function videopractice_get_coursemodule_info(stdClass $cm): ?cached_cm_info {
     global $DB;
-    $activity = $DB->get_record('videopractice', ['id' => $cm->instance], 'id,name,intro,introformat');
+    $activity = $DB->get_record(
+        'videopractice',
+        ['id' => $cm->instance],
+        'id,name,intro,introformat,completionpercent,completionrequirepractice'
+    );
     if (!$activity) {
         return null;
     }
