@@ -39,7 +39,7 @@ class mod_videopractice_mod_form extends moodleform_mod {
      * @return void
      */
     public function definition(): void {
-        global $COURSE;
+        global $CFG, $COURSE;
         $mform = $this->_form;
         $mform->addElement('header', 'general', get_string('general', 'form'));
         $mform->addElement('text', 'name', get_string('videopracticename', 'videopractice'), ['size' => 64]);
@@ -101,7 +101,7 @@ class mod_videopractice_mod_form extends moodleform_mod {
             $field = ($data['referencesource'] ?? '') === 'upload' ? 'referencevideo' : 'referenceurl';
             $errors[$field] = $sourceerror;
         }
-        $field = $this->completion_name('completionpercent');
+        $field = 'completionpercent' . $this->get_suffix();
         if (isset($data[$field])) {
             $value = (int)$data[$field];
             if ($value < 1 || $value > 100) {
@@ -127,11 +127,7 @@ class mod_videopractice_mod_form extends moodleform_mod {
      * @return void
      */
     public function data_preprocessing(&$defaultvalues): void {
-        foreach (['completionpercent', 'completionrequirepractice'] as $field) {
-            if (array_key_exists($field, $defaultvalues)) {
-                $defaultvalues[$this->completion_name($field)] = $defaultvalues[$field];
-            }
-        }
+        parent::data_preprocessing($defaultvalues);
         if (!empty($this->current->instance)) {
             player::prepare_form_data($defaultvalues, $this->context);
         }
@@ -144,8 +140,9 @@ class mod_videopractice_mod_form extends moodleform_mod {
      */
     public function add_completion_rules(): array {
         $mform = $this->_form;
-        $percent = $this->completion_name('completionpercent');
-        $practice = $this->completion_name('completionrequirepractice');
+        $suffix = $this->get_suffix();
+        $percent = 'completionpercent' . $suffix;
+        $practice = 'completionrequirepractice' . $suffix;
         $mform->addElement('text', $percent, get_string('completionpercent', 'videopractice'), ['size' => 5]);
         $mform->setType($percent, PARAM_INT);
         $mform->setDefault($percent, 80);
@@ -162,37 +159,8 @@ class mod_videopractice_mod_form extends moodleform_mod {
      * @return bool
      */
     public function completion_rule_enabled($data): bool {
-        return !empty($data[$this->completion_name('completionpercent')]) ||
-            !empty($data[$this->completion_name('completionrequirepractice')]);
-    }
-
-    /**
-     * Maps suffixed completion values back to DB field names.
-     *
-     * @return stdClass|null
-     */
-    public function get_data() {
-        $data = parent::get_data();
-        if (!$data) {
-            return $data;
-        }
-        foreach (['completionpercent', 'completionrequirepractice'] as $field) {
-            $suffixed = $this->completion_name($field);
-            if (property_exists($data, $suffixed)) {
-                $data->{$field} = $data->{$suffixed};
-                unset($data->{$suffixed});
-            }
-        }
-        return $data;
-    }
-
-    /**
-     * Returns Moodle-safe completion form field name.
-     *
-     * @param string $field DB field.
-     * @return string
-     */
-    private function completion_name(string $field): string {
-        return $field . '_videopractice';
+        $suffix = $this->get_suffix();
+        return !empty($data['completionpercent' . $suffix]) ||
+            !empty($data['completionrequirepractice' . $suffix]);
     }
 }
