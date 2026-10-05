@@ -300,7 +300,7 @@ function videopractice_get_coursemodule_info(stdClass $cm): ?cached_cm_info {
  * @param cached_cm_info $cm Cached module information.
  * @return array
  */
-function videopractice_get_completion_active_rule_descriptions(cached_cm_info $cm): array {
+function mod_videopractice_get_completion_active_rule_descriptions(cached_cm_info $cm): array {
     if ((int)$cm->completion !== COMPLETION_TRACKING_AUTOMATIC ||
         empty($cm->customdata['customcompletionrules']['completionpercent'])) {
         return [];
