@@ -296,10 +296,10 @@ function videopractice_get_coursemodule_info(stdClass $cm) {
 /**
  * Returns descriptions of active custom completion rules for course pages.
  *
- * @param cached_cm_info $cm Cached module information.
+ * @param cm_info|stdClass $cm Module information.
  * @return array
  */
-function mod_videopractice_get_completion_active_rule_descriptions(cached_cm_info $cm): array {
+function mod_videopractice_get_completion_active_rule_descriptions($cm): array {
     if ((int)$cm->completion !== COMPLETION_TRACKING_AUTOMATIC ||
         empty($cm->customdata['customcompletionrules']['completionpercent'])) {
         return [];
@@ -312,6 +312,90 @@ function mod_videopractice_get_completion_active_rule_descriptions(cached_cm_inf
         $descriptions[] = get_string('completionrequirepracticedesc', 'videopractice');
     }
     return $descriptions;
+}
+
+/**
+ * Adds Video Practice learner-data reset option to the course reset form.
+ *
+ * @param moodleform $mform Reset form.
+ * @return void
+ */
+function videopractice_reset_course_form_definition(&$mform): void {
+    $mform->addElement('header', 'videopracticeheader', get_string('modulenameplural', 'videopractice'));
+    $mform->addElement('advcheckbox', 'reset_videopractice', get_string('resetuserdata', 'videopractice'));
+}
+
+/**
+ * Returns default values for the course reset form.
+ *
+ * @param stdClass $course Course record.
+ * @return array
+ */
+function videopractice_reset_course_form_defaults($course): array {
+    return ['reset_videopractice' => 1];
+}
+
+/**
+ * Removes learner data owned by Video Practice activities during a course reset.
+ *
+ * @param stdClass $data Reset options.
+ * @return array Reset status entries.
+ */
+function videopractice_reset_userdata($data): array {
+    global $CFG, $DB;
+
+    if (empty($data->reset_videopractice)) {
+        return [];
+    }
+
+    require_once($CFG->libdir . '/gradelib.php');
+    $fs = get_file_storage();
+    $activities = $DB->get_records('videopractice', ['course' => $data->courseid]);
+
+    foreach ($activities as $activity) {
+        $cm = get_coursemodule_from_instance(
+            'videopractice',
+            $activity->id,
+            $data->courseid,
+            false,
+            IGNORE_MISSING
+        );
+        if ($cm) {
+            $context = context_module::instance($cm->id);
+            $fs->delete_area_files($context->id, 'mod_videopractice', 'submission');
+        }
+
+        $submissionids = $DB->get_fieldset_select(
+            'videopractice_submissions',
+            'id',
+            'videopracticeid = :activityid',
+            ['activityid' => $activity->id]
+        );
+        if ($submissionids) {
+            [$insql, $params] = $DB->get_in_or_equal($submissionids, SQL_PARAMS_NAMED, 'submission');
+            $DB->delete_records_select('videopractice_stagegrades', "submissionid {$insql}", $params);
+        }
+
+        $DB->delete_records('videopractice_submissions', ['videopracticeid' => $activity->id]);
+        $DB->delete_records('videopractice_progress', ['videopracticeid' => $activity->id]);
+
+        grade_update(
+            'mod/videopractice',
+            $data->courseid,
+            'mod',
+            'videopractice',
+            $activity->id,
+            0,
+            null,
+            ['reset' => true]
+        );
+    }
+
+    return [[
+        'component' => get_string('modulenameplural', 'videopractice'),
+        'item' => get_string('resetuserdata', 'videopractice'),
+        'error' => false,
+    ]];
 }
 
 /**
