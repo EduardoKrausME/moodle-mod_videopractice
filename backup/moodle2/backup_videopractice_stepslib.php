@@ -80,6 +80,7 @@ class backup_videopractice_activity_structure_step extends backup_activity_struc
         $submission->annotate_ids('user', 'graderid');
         $stagegrade->annotate_ids('videopractice_stage', 'stageid');
 
+        $videopractice->annotate_files('mod_videopractice', 'intro', null);
         $videopractice->annotate_files('mod_videopractice', 'referencevideo', null);
         $submission->annotate_files('mod_videopractice', 'submission', 'id');
 
