@@ -149,6 +149,7 @@ class restore_videopractice_activity_structure_step extends restore_activity_str
      * @return void
      */
     protected function after_execute(): void {
+        $this->add_related_files('mod_videopractice', 'intro', null);
         $this->add_related_files('mod_videopractice', 'referencevideo', null);
         $this->add_related_files('mod_videopractice', 'submission', 'videopractice_submission');
     }
