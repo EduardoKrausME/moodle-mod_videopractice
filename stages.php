@@ -29,6 +29,7 @@ require('../../config.php');
 $id = required_param('id', PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
 $stageid = optional_param('stageid', 0, PARAM_INT);
+$confirm = optional_param('confirm', 0, PARAM_BOOL);
 $cm = get_coursemodule_from_id('videopractice', $id, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
 $activity = $DB->get_record('videopractice', ['id' => $cm->instance], '*', MUST_EXIST);
@@ -59,7 +60,31 @@ if ($action !== '' && $stageid) {
             redirect($PAGE->url, get_string('cannotdeletelaststage', 'videopractice'), null,
                 \core\output\notification::NOTIFY_ERROR);
         }
-        $DB->delete_records('videopractice_stagegrades', ['stageid' => $stage->id]);
+        if ($DB->record_exists('videopractice_stagegrades', ['stageid' => $stage->id])) {
+            redirect(
+                $PAGE->url,
+                get_string('cannotdeletegradedstage', 'videopractice'),
+                null,
+                \core\output\notification::NOTIFY_ERROR
+            );
+        }
+        if (!$confirm) {
+            $yesurl = new moodle_url('/mod/videopractice/stages.php', [
+                'id' => $cm->id,
+                'stageid' => $stage->id,
+                'action' => 'delete',
+                'confirm' => 1,
+                'sesskey' => sesskey(),
+            ]);
+            echo $OUTPUT->header();
+            echo $OUTPUT->confirm(
+                get_string('confirmdeletestage', 'videopractice', format_string($stage->name)),
+                $yesurl,
+                $PAGE->url
+            );
+            echo $OUTPUT->footer();
+            exit;
+        }
         $DB->delete_records('videopractice_stages', ['id' => $stage->id]);
     }
     redirect($PAGE->url);
