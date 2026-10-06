@@ -35,6 +35,7 @@
                 <thead>
                 <tr>
                     <th>{{#str}} student, videopractice {{/str}}</th>
+                    {{#identityheaders}}<th>{{name}}</th>{{/identityheaders}}
                     <th>{{#str}} referencewatched, videopractice {{/str}}</th>
                     <th>{{#str}} submissionstatus, videopractice {{/str}}</th>
                     <th>{{#str}} assessmentstatus, videopractice {{/str}}</th>
@@ -46,8 +47,8 @@
                 <tbody>
                 {{#rows}}
                     <tr>
-                        <td><a href="{{{profileurl}}}">{{fullname}}</a><br><small class="text-muted">{{email}}</small>
-                        </td>
+                        <td><a href="{{{profileurl}}}">{{fullname}}</a></td>
+                        {{#identityvalues}}<td>{{value}}</td>{{/identityvalues}}
                         <td><span
                                 class="{{#referencecomplete}}text-success fw-bold{{/referencecomplete}}">{{referencepercent}}
                             %</span></td>
