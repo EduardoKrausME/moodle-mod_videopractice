@@ -96,6 +96,11 @@ class mod_videopractice_mod_form extends moodleform_mod {
      */
     public function validation($data, $files): array {
         $errors = parent::validation($data, $files);
+
+        if (isset($data['grade']) && is_numeric($data['grade']) && (float)$data['grade'] < 0) {
+            $errors['grade'] = get_string('errorscalenotsupported', 'videopractice');
+        }
+
         $sourceerror = player::validate_source((array)$data);
         if ($sourceerror !== '') {
             $field = ($data['referencesource'] ?? '') === 'upload' ? 'referencevideo' : 'referenceurl';
