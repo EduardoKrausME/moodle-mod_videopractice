@@ -42,9 +42,23 @@ $PAGE->set_title(get_string('report', 'videopractice'));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-$users = get_enrolled_users($context, 'mod/videopractice:submit', 0,
-    "u.id,u.firstname,u.lastname,u.email,u.picture,u.imagealt,u.firstnamephonetic,u.lastnamephonetic,u.middlename,u.alternatename",
-    'u.lastname ASC, u.firstname ASC');
+$identityfields = \core_user\fields::for_identity($context)->get_required_fields();
+$baseuserfields = [
+    'id', 'firstname', 'lastname', 'picture', 'imagealt',
+    'firstnamephonetic', 'lastnamephonetic', 'middlename', 'alternatename',
+];
+$userfields = array_values(array_unique(array_merge($baseuserfields, $identityfields)));
+$users = get_enrolled_users(
+    $context,
+    'mod/videopractice:submit',
+    0,
+    implode(',', array_map(static fn(string $field): string => 'u.' . $field, $userfields)),
+    'u.lastname ASC, u.firstname ASC'
+);
+$identityheaders = [];
+foreach ($identityfields as $field) {
+    $identityheaders[] = ['name' => \core_user\fields::get_display_name($field)];
+}
 $progressmanager = new progress_manager();
 $submissionmanager = new submission_manager();
 $rows = [];
@@ -79,10 +93,14 @@ foreach ($users as $user) {
             submission_manager::STATUS_SUBMITTED,
             submission_manager::STATUS_GRADED,
         ], true);
+    $identityvalues = [];
+    foreach ($identityfields as $field) {
+        $identityvalues[] = ['value' => s((string)($user->{$field} ?? ''))];
+    }
     $rows[] = [
         'fullname' => fullname($user),
         'profileurl' => (string)new moodle_url('/user/view.php', ['id' => $user->id, 'course' => $course->id]),
-        'email' => s($user->email),
+        'identityvalues' => $identityvalues,
         'referencepercent' => format_float((float)$progress->percent, 1),
         'referencecomplete' => (bool)$progress->completed,
         'submissionstatus' => $submissionstatus,
@@ -96,16 +114,19 @@ foreach ($users as $user) {
             'submissionid' => $submission->id,
         ]) : '',
     ];
-    $csvrows[] = [
-        fullname($user),
-        $user->email,
+    $csvrow = [fullname($user)];
+    foreach ($identityfields as $field) {
+        $csvrow[] = (string)($user->{$field} ?? '');
+    }
+    $csvrow = array_merge($csvrow, [
         format_float((float)$progress->percent, 1),
         $progress->completed ? get_string('yes') : get_string('no'),
         $submissionstatus,
         $assessment,
         $grade,
         $lastupdate ? userdate($lastupdate) : '',
-    ];
+    ]);
+    $csvrows[] = $csvrow;
 }
 
 if ($download === 'csv') {
@@ -113,9 +134,11 @@ if ($download === 'csv') {
     require_once($CFG->libdir . '/csvlib.class.php');
     $csv = new csv_export_writer();
     $csv->set_filename(clean_filename($activity->name . '-video-practice-report'));
-    $csv->add_data([
-        get_string('student', 'videopractice'),
-        get_string('email'),
+    $csvheader = [get_string('student', 'videopractice')];
+    foreach ($identityfields as $field) {
+        $csvheader[] = \core_user\fields::get_display_name($field);
+    }
+    $csvheader = array_merge($csvheader, [
         get_string('referencewatched', 'videopractice'),
         get_string('referencethreshold', 'videopractice'),
         get_string('submissionstatus', 'videopractice'),
@@ -123,6 +146,7 @@ if ($download === 'csv') {
         get_string('grade', 'grades'),
         get_string('lastupdate', 'videopractice'),
     ]);
+    $csv->add_data($csvheader);
     foreach ($csvrows as $csvrow) {
         $csv->add_data($csvrow);
     }
@@ -134,6 +158,7 @@ $data = [
     'name' => format_string($activity->name),
     'rows' => $rows,
     'hasrows' => (bool)$rows,
+    'identityheaders' => $identityheaders,
     'canexport' => has_capability('mod/videopractice:exportreport', $context),
     'exporturl' => (string)new moodle_url('/mod/videopractice/report.php', ['id' => $cm->id, 'download' => 'csv']),
     'backurl' => (string)new moodle_url('/mod/videopractice/view.php', ['id' => $cm->id]),
