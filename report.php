@@ -42,7 +42,7 @@ $PAGE->set_title(get_string('report', 'videopractice'));
 $PAGE->set_heading(format_string($course->fullname));
 $PAGE->set_context($context);
 
-$identityfields = \core_user\fields::for_identity($context)->get_required_fields();
+$identityfields = \core_user\fields::for_identity($context, false)->get_required_fields();
 $baseuserfields = [
     'id', 'firstname', 'lastname', 'picture', 'imagealt',
     'firstnamephonetic', 'lastnamephonetic', 'middlename', 'alternatename',
