@@ -82,6 +82,9 @@ class progress_manager {
             $oldsegments = [];
         }
         $duration = max(0.0, min(864000.0, $duration));
+        if ((float)$existing->duration > 0) {
+            $duration = max((float)$existing->duration, $duration);
+        }
         $position = max(0.0, $duration > 0 ? min($duration, $position) : $position);
         $storedsegments = self::merge_segments($oldsegments, $duration);
         $merged = self::merge_segments(array_merge($storedsegments, $segments), $duration);
@@ -92,7 +95,7 @@ class progress_manager {
         // reasonably have elapsed since the previous server update. This does not
         // rely on a client-provided percentage and prevents instant forged completion.
         $elapsed = $existing->timemodified ? max(1, time() - (int)$existing->timemodified) : 3;
-        $maximumgrowth = max(20.0, ($elapsed * 4.0) + 10.0);
+        $maximumgrowth = max(5.0, ($elapsed * 2.0) + 5.0);
         if (($watched - $oldwatched) > $maximumgrowth) {
             $merged = $storedsegments;
             $watched = $oldwatched;
