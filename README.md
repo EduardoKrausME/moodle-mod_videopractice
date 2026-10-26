@@ -29,14 +29,6 @@ Backup/restore and Moodle Privacy API support are included.
 - PHP version supported by the installed Moodle release.
 - HTTPS is required by modern browsers for camera/microphone recording outside localhost.
 
-## Installation
-
-Copy the plugin directory to:
-
-`mod/videopractice`
-
-Then visit Site administration > Notifications and complete the Moodle upgrade process.
-
 ## Reference
 
 The player/progress concepts and source handling were adapted from:
