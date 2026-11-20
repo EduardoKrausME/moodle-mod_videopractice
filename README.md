@@ -1,4 +1,4 @@
-# Moodle Video Practice — `mod_videopractice`
+# Moodle Video Practice - `mod_videopractice`
 
 Video Practice is a Moodle activity for demonstration-and-practice learning. A teacher provides a reference video
 showing a procedure, technique or practical task. Students watch the reference and then upload or record their own video
